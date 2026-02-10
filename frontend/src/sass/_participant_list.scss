@@ -1,0 +1,36 @@
+@import "mixins";
+
+.participant-list {
+  table.p-table--mobile-card {
+    td.name.u-flex.u-space-between {
+      @include desktop {
+        display: block !important;
+      }
+
+      div.name-email {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
+
+.manual-check-in-modal {
+    footer.p-modal__footer {
+        @include desktop {
+            display: flex;
+            gap: 0.5rem;
+            span.input-container {
+                flex: 1;
+            }
+
+            button {
+                width: unset !important;
+            }
+        }
+
+        button {
+            width: 100%;
+        }
+    }
+}

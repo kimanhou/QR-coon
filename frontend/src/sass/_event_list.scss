@@ -1,0 +1,17 @@
+.event-list {
+  .filter-buttons-container {
+    button {
+      flex: 1;
+    }
+  }
+
+  .event-list-container {
+    .event {
+      cursor: pointer;
+
+      .event-content {
+        margin-bottom: $spv--small;
+      }
+    }
+  }
+}

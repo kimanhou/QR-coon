@@ -1,0 +1,72 @@
+@import "vanilla-framework/scss/build";
+@import "event_list";
+@import "home";
+@import "participant_list";
+@import "scanner";
+
+@include vf-p-icon-status-succeeded-small;
+@include vf-p-icon-status-waiting-small;
+@include vf-p-icon-snapshot;
+
+#root {
+  width: 100%;
+
+  .application {
+    header {
+      display: flex;
+      justify-content: center;
+      padding: 2rem 0;
+
+      > a {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 2rem;
+
+        &:visited {
+          color: unset;
+        }
+
+        > img {
+          height: 2rem;
+        }
+      }
+    }
+
+    main {
+      min-height: calc(100vh - 9rem);
+    }
+
+    footer {
+      text-align: center;
+
+      > p {
+        max-width: unset;
+      }
+    }
+  }
+
+  .u-flex {
+    display: flex;
+  }
+
+  .u-flex-justify-content-center {
+    justify-content: center;
+  }
+
+  .u-flex-align-items-center {
+    align-items: center;
+  }
+
+  .u-gap--small {
+    gap: 0.5rem;
+  }
+
+  .u-space-between {
+    justify-content: space-between;
+  }
+
+  .u-text-align--center {
+    text-align: center;
+  }
+}

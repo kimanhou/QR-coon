@@ -1,0 +1,14 @@
+@import "mixins";
+
+.home {
+  @include desktop {
+    display: flex;
+  }
+
+  .p-card {
+    background-color: var(--vf-color-background-active);
+    border: none;
+    border-radius: 4px;
+    flex: 1;
+  }
+}
