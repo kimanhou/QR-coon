@@ -29,6 +29,7 @@ export interface Scan {
   personId: string;
   timestamp: number; // Unix timestamp
   method: string;
+  uploaded?: boolean;
 }
 
 export class QRCoonDB extends Dexie {
@@ -42,7 +43,8 @@ export class QRCoonDB extends Dexie {
     this.version(1).stores({
       events: "++id, sprint, date, session",
       eventAttendees: "++id, eventId, personId",
-      scans: "id, eventId, personId, [eventId+personId], timestamp, method",
+      scans:
+        "id, eventId, personId, [eventId+personId], timestamp, method, uploaded",
       people: "id, firstName, lastName, email, directManager",
     });
   }

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "48c4be86-df93-40b9-a4c2-8c3013814492",
+    "event_id": 1,
+    "person_id": "e9868e53-d9c2-44fc-9b71-68c5f505dbb6",
+    "timestamp": 1770722395380,
+    "method": "manual"
+  },
+  {
+    "id": "c9363601-705b-4b9e-9a94-6448f3224072",
+    "event_id": 1,
+    "person_id": "7801c870-50ce-4392-a79b-bdb25d897ccd",
+    "timestamp": 1770722115327,
+    "method": "scan"
+  }
+]

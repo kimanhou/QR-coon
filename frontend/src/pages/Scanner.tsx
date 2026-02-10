@@ -12,6 +12,8 @@ const Scanner = ({ currentEventId }: Props) => {
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const scanHistory = useLiveQuery(async () => {
@@ -35,6 +37,59 @@ const Scanner = ({ currentEventId }: Props) => {
     return historyWithNames;
   }, [currentEventId]);
 
+  const pendingCount = useLiveQuery(async () => {
+    return await db.scans
+      .toCollection()
+      .filter((scan) => scan.uploaded === false)
+      .count(); // This returns a Promise resolving to the number of matches
+  }, []);
+
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+
+    const pendingScans = await db.scans
+      .toCollection()
+      .filter((scan) => scan.uploaded === false)
+      .toArray();
+
+    if (pendingScans.length === 0) {
+      setSyncMessage("All scans are already synced.");
+      setIsSyncing(false);
+      setTimeout(() => setSyncMessage(null), 3000);
+      return;
+    }
+
+    let successCount = 0;
+    const BACKEND_URL = "http://localhost:5000/scans";
+
+    for (const scan of pendingScans) {
+      try {
+        const response = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: scan.id,
+            event_id: scan.eventId,
+            person_id: scan.personId,
+            timestamp: scan.timestamp,
+            method: scan.method,
+          }),
+        });
+
+        if (response.ok) {
+          await db.scans.update(scan.id, { uploaded: true });
+          successCount++;
+        }
+      } catch (err) {
+        console.error("Sync failed for record:", scan.id, err);
+      }
+    }
+
+    setSyncMessage(`Successfully synced ${successCount} scans to backend.`);
+    setIsSyncing(false);
+    setTimeout(() => setSyncMessage(null), 3000);
+  };
+
   const startScanner = () => {
     setIsScanning(true);
 
@@ -57,8 +112,6 @@ const Scanner = ({ currentEventId }: Props) => {
           const [personGuid, _, badgeSprint] = decodedText.split("|");
           const guidRegex =
             /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-          console.log("Decoded QR code:", { personGuid, badgeSprint });
 
           if (!guidRegex.test(personGuid)) {
             setError(
@@ -108,6 +161,7 @@ const Scanner = ({ currentEventId }: Props) => {
               personId: person.id,
               timestamp: Date.now(),
               method: "scan",
+              uploaded: false,
             });
 
             setLastScanned(`${person.firstName} ${person.lastName}`);
@@ -205,6 +259,22 @@ const Scanner = ({ currentEventId }: Props) => {
             )}
           </ul>
         </div>
+
+        {pendingCount > 0 && (
+          <Button
+            appearance="default"
+            className="has-icon force-sync-button"
+            onClick={handleForceSync}
+            loading={isSyncing ? true : undefined}
+            disabled={isSyncing}
+          >
+            <Icon name="upload" />
+            <span>
+              Force sync {pendingCount ?? 0} pending scan
+              {pendingCount === 1 ? "" : "s"}
+            </span>
+          </Button>
+        )}
       </div>
     </div>
   );

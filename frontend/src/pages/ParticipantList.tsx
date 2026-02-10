@@ -53,6 +53,7 @@ const ParticipantList: FC<Props> = ({ eventId }) => {
         // eslint-disable-next-line react-hooks/purity
         timestamp: Date.now(),
         method: "manual",
+        uploaded: false,
       });
       // useLiveQuery will automatically refresh the UI
     } catch (err) {

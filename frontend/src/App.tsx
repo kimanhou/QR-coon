@@ -9,12 +9,88 @@ import NameBadgeGenerator from "./pages/NameBadgeGenerator";
 import { applyTheme, loadTheme } from "@canonical/react-components";
 import "./sass/styles.scss";
 
+async function uploadPendingScans() {
+  const pendingScans = await db.scans.where("uploaded").equals(0).toArray();
+  if (pendingScans.length === 0) return;
+
+  console.log(`QR-coon: Attempting to upload ${pendingScans.length} scans...`);
+  for (const scan of pendingScans) {
+    try {
+      const response = await fetch("/scans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_id: scan.eventId,
+          person_id: scan.personId,
+          timestamp: scan.timestamp,
+          method: scan.method,
+        }),
+      });
+
+      if (response.ok) {
+        await db.scans.update(scan.id, { uploaded: 1 });
+      }
+    } catch (err) {
+      console.error("Manual sync failed for scan:", scan.id, err);
+    }
+  }
+}
+
 function App() {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     const theme = loadTheme();
     applyTheme(theme);
+  }, []);
+
+  useEffect(() => {
+    async function initSync() {
+      if ("serviceWorker" in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.register("/sw.js");
+          console.log(
+            "QR-coon: Service Worker registered with scope:",
+            registration.scope,
+          );
+
+          await navigator.serviceWorker.ready;
+
+          if ("periodicSync" in registration) {
+            const status = await navigator.permissions.query({
+              name: "periodic-background-sync" as PermissionName,
+            });
+
+            if (status.state === "granted") {
+              await (registration as any).periodicSync.register(
+                "upload-scans",
+                {
+                  minInterval: 60 * 1000,
+                },
+              );
+              console.log("QR-coon: Periodic sync registered");
+            } else {
+              console.warn(
+                "QR-coon: Periodic sync permission denied. Using interval fallback.",
+              );
+              setInterval(uploadPendingScans, 60000);
+            }
+          } else {
+            console.log(
+              "QR-coon: PeriodicSync not supported. Using interval fallback.",
+            );
+            setInterval(uploadPendingScans, 60000);
+          }
+        } catch (err) {
+          console.error(
+            "QR-coon: Service Worker or Sync registration failed",
+            err,
+          );
+          setInterval(uploadPendingScans, 60000);
+        }
+      }
+    }
+    initSync();
   }, []);
 
   useEffect(() => {
@@ -26,25 +102,14 @@ function App() {
           "rw",
           [db.people, db.events, db.eventAttendees],
           async () => {
-            // Transform people to ensure directManager is a number or undefined
-            const sanitizedPeople = seedData.people.map((p: any) => ({
-              ...p,
-              directManager:
-                typeof p.directManager === "number"
-                  ? p.directManager
-                  : isNaN(parseInt(p.directManager))
-                    ? undefined
-                    : parseInt(p.directManager),
-            }));
-
-            await db.people.bulkAdd(sanitizedPeople);
+            await db.people.bulkPut(seedData.people);
 
             const eventsWithDates = seedData.events.map((e: any) => ({
               ...e,
               date: new Date(e.date),
             }));
-            await db.events.bulkAdd(eventsWithDates);
-            await db.eventAttendees.bulkAdd(seedData.attendees);
+            await db.events.bulkPut(eventsWithDates);
+            await db.eventAttendees.bulkPut(seedData.attendees);
           },
         );
       }

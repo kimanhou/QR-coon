@@ -9,7 +9,16 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./backend/init-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/init-db/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./backend/init-db/data-events.json:/docker-entrypoint-initdb.d/data-events.json
+      - ./backend/init-db/data-people.json:/docker-entrypoint-initdb.d/data-people.json
+      - ./backend/init-db/data-event_attendees.json:/docker-entrypoint-initdb.d/data-event_attendees.json
+      - ./backend/init-db/data-scans.json:/docker-entrypoint-initdb.d/data-scans.json
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -19,6 +28,9 @@ services:
       - "5000:5000"
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/mydb
+    depends_on:
+      db:
+        condition: service_healthy
     develop:
       watch:
         - action: sync
@@ -33,6 +45,8 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
+    depends_on:
+      - backend
     develop:
       watch:
         - action: sync
