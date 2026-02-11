@@ -1,0 +1,16 @@
+.loading-screen {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  > img.logo {
+    width: 4rem;
+  }
+
+  .p-icon--spinner.u-animation--spin {
+    height: 2rem;
+    width: 2rem;
+  }
+}

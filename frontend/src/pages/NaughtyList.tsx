@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../db";
+import { db } from "db";
 
 interface Props {
   activeEventId: number;

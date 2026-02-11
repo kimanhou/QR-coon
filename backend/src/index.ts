@@ -26,11 +26,7 @@ app.get("/db-check", async (req, res) => {
 app.get("/events", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM events");
-    res.json({
-      status: "Connected to database",
-      count: result.rows.length,
-      rows: result.rows,
-    });
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -39,11 +35,7 @@ app.get("/events", async (req, res) => {
 app.get("/people", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM people");
-    res.json({
-      status: "Connected to database",
-      count: result.rows.length,
-      rows: result.rows,
-    });
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -52,11 +44,7 @@ app.get("/people", async (req, res) => {
 app.get("/event_attendees", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM event_attendees");
-    res.json({
-      status: "Connected to database",
-      count: result.rows.length,
-      rows: result.rows,
-    });
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -65,11 +53,7 @@ app.get("/event_attendees", async (req, res) => {
 app.get("/scans", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM scans");
-    res.json({
-      status: "Connected to database",
-      count: result.rows.length,
-      rows: result.rows,
-    });
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

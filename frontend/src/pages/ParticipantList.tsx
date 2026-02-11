@@ -1,8 +1,8 @@
 import { useState, type FC } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../db";
+import { db } from "db";
 import { Icon } from "@canonical/react-components";
-import ManualCheckInButton from "../components/ManualCheckInButton";
+import ManualCheckInButton from "components/ManualCheckInButton";
 
 interface Props {
   eventId: number;
@@ -54,6 +54,7 @@ const ParticipantList: FC<Props> = ({ eventId }) => {
         timestamp: Date.now(),
         method: "manual",
         uploaded: false,
+        isLocal: true,
       });
       // useLiveQuery will automatically refresh the UI
     } catch (err) {
@@ -123,6 +124,7 @@ const ParticipantList: FC<Props> = ({ eventId }) => {
                           {new Date(p.checkInTime).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
+                            hour12: false,
                           })}
                         </span>
                       )}

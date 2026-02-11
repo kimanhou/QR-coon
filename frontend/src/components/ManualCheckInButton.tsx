@@ -1,7 +1,7 @@
 import { useState, type FC } from "react";
 import { Button, usePortal } from "@canonical/react-components";
-import ManualCheckInModal from "./ManualCheckInModal";
-import type { Person } from "../db";
+import ManualCheckInModal from "components/ManualCheckInModal";
+import type { Person } from "db";
 
 interface Props {
   confirmingPerson: Person;

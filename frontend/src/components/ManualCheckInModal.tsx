@@ -1,7 +1,7 @@
 import type { ChangeEvent, FC, KeyboardEvent } from "react";
 import { useState } from "react";
 import { ActionButton, Input, Modal } from "@canonical/react-components";
-import type { Person } from "../db";
+import type { Person } from "db";
 
 interface Props {
   confirmingPerson: Person;

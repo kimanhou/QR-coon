@@ -1,9 +1,9 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { db } from "../db";
+import { db } from "db";
 import { useLiveQuery } from "dexie-react-hooks";
-import Scanner from "./Scanner";
-import ParticipantList from "./ParticipantList";
-import NaughtyList from "./NaughtyList";
+import Scanner from "pages/Scanner";
+import ParticipantList from "pages/ParticipantList";
+import NaughtyList from "pages/NaughtyList";
 
 const EventDashboard = () => {
   const navigate = useNavigate();

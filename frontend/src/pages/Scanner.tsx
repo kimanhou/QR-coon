@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../db";
+import { db } from "db";
 import { Notification, Button, Icon } from "@canonical/react-components";
 
 interface Props {
@@ -75,6 +75,7 @@ const Scanner = ({ currentEventId }: Props) => {
         const pushedIds = pendingScans.map((s) => s.id);
         await db.scans.where("id").anyOf(pushedIds).modify({ uploaded: true });
         const trulyNewScans = data.updates.filter(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (remoteScan: any) => !pushedIds.includes(remoteScan.id),
         );
 
@@ -270,7 +271,6 @@ const Scanner = ({ currentEventId }: Props) => {
               <li key={index} className="p-list__item u-flex u-space-between">
                 <span>{scan.name}</span>
                 <span className="u-text--muted">
-                  {scan.checkInTime}
                   {new Date(scan.timestamp).toLocaleDateString([], {
                     weekday: "long",
                     month: "short",
@@ -280,6 +280,7 @@ const Scanner = ({ currentEventId }: Props) => {
                   {new Date(scan.timestamp).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
+                    hour12: false,
                   })}
                 </span>
               </li>
@@ -292,21 +293,21 @@ const Scanner = ({ currentEventId }: Props) => {
           </ul>
         </div>
 
-        {pendingCount > 0 && (
-          <Button
-            appearance="default"
-            className="has-icon force-sync-button"
-            onClick={handleForceSync}
-            loading={isSyncing ? true : undefined}
-            disabled={isSyncing}
-          >
-            <Icon name="upload" />
-            <span>
-              Force sync {pendingCount ?? 0} pending scan
-              {pendingCount === 1 ? "" : "s"}
-            </span>
-          </Button>
-        )}
+        <Button
+          appearance="default"
+          className="has-icon force-sync-button"
+          onClick={handleForceSync}
+          loading={isSyncing ? true : undefined}
+          disabled={isSyncing}
+        >
+          <Icon name="upload" />
+          <span>
+            Force sync{" "}
+            {pendingCount !== undefined && pendingCount > 0
+              ? `${pendingCount} pending scan${pendingCount === 1 ? "" : "s"}`
+              : ""}
+          </span>
+        </Button>
       </div>
     </div>
   );

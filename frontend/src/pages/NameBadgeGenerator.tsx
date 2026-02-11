@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { QRCodeSVG } from "qrcode.react";
-import { db } from "../db";
+import { db } from "db";
 import { Button } from "@canonical/react-components";
 
 const NameBadgeGenerator = () => {

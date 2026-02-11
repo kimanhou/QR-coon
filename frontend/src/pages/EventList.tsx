@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../db";
+import { db } from "db";
 import { Button, Notification } from "@canonical/react-components";
 
 type FilterType = "all" | "today" | "tomorrow";
