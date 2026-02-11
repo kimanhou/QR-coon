@@ -30,6 +30,7 @@ export interface Scan {
   timestamp: number; // Unix timestamp
   method: string;
   uploaded?: boolean;
+  isLocal?: boolean;
 }
 
 export class QRCoonDB extends Dexie {
@@ -44,7 +45,7 @@ export class QRCoonDB extends Dexie {
       events: "++id, sprint, date, session",
       eventAttendees: "++id, eventId, personId",
       scans:
-        "id, eventId, personId, [eventId+personId], timestamp, method, uploaded",
+        "id, eventId, personId, [eventId+personId], timestamp, method, uploaded, isLocal",
       people: "id, firstName, lastName, email, directManager",
     });
   }

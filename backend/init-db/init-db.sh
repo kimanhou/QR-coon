@@ -48,9 +48,21 @@ psql -v ON_ERROR_STOP=1 --username user --dbname mydb <<-EOSQL
         event_id INT REFERENCES events(id),
         person_id UUID REFERENCES people(id),
         timestamp BIGINT,
-        method VARCHAR(50)
+        method VARCHAR(50),
+        server_received_at TIMESTAMPTZ DEFAULT NOW()
     );
 
-    INSERT INTO scans (id, event_id, person_id, timestamp, method)
-    SELECT * FROM json_populate_recordset(NULL::scans, pg_read_file('/docker-entrypoint-initdb.d/data-scans.json')::json);
+    -- 1. Parse JSON into a temporary structure where types match the JSON source
+    INSERT INTO scans (id, event_id, person_id, timestamp, method, server_received_at)
+    SELECT
+        (val->>'id')::UUID,
+        (val->>'event_id')::INT,
+        (val->>'person_id')::UUID,
+        (val->>'timestamp')::BIGINT,
+        (val->>'method')::VARCHAR,
+        -- 2. Explicitly convert the numeric epoch to TIMESTAMPTZ
+        to_timestamp((val->>'server_received_at')::BIGINT)
+    FROM (
+        SELECT json_array_elements(pg_read_file('/docker-entrypoint-initdb.d/data-scans.json')::json) AS val
+    ) AS seed_data;
 EOSQL

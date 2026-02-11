@@ -20,13 +20,16 @@ const Scanner = ({ currentEventId }: Props) => {
     const recentScans = await db.scans
       .where("eventId")
       .equals(currentEventId)
-      .filter((scan) => scan.method !== "manual") // Do not display manual check-ins
+      .filter((scan) => scan.method !== "manual" && scan.isLocal === true) // Do not display manual check-ins
       .reverse()
-      .limit(5)
       .toArray();
 
+    const sortedScans = recentScans
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 5);
+
     const historyWithNames = await Promise.all(
-      recentScans.map(async (scan) => {
+      sortedScans.map(async (scan) => {
         const person = await db.people.get(scan.personId);
         return {
           ...scan,
@@ -40,7 +43,7 @@ const Scanner = ({ currentEventId }: Props) => {
   const pendingCount = useLiveQuery(async () => {
     return await db.scans
       .toCollection()
-      .filter((scan) => scan.uploaded === false)
+      .filter((scan) => scan.uploaded === false && scan.isLocal === true)
       .count(); // This returns a Promise resolving to the number of matches
   }, []);
 
@@ -52,42 +55,57 @@ const Scanner = ({ currentEventId }: Props) => {
       .filter((scan) => scan.uploaded === false)
       .toArray();
 
-    if (pendingScans.length === 0) {
-      setSyncMessage("All scans are already synced.");
+    const lastSync =
+      localStorage.getItem(`lastSync_${currentEventId}`) ||
+      new Date(0).toISOString();
+
+    try {
+      const response = await fetch("http://localhost:5000/scans/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scans: pendingScans,
+          last_sync: lastSync,
+          event_id: currentEventId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const pushedIds = pendingScans.map((s) => s.id);
+        await db.scans.where("id").anyOf(pushedIds).modify({ uploaded: true });
+        const trulyNewScans = data.updates.filter(
+          (remoteScan: any) => !pushedIds.includes(remoteScan.id),
+        );
+
+        for (const remoteScan of data.updates) {
+          const existing = await db.scans.get(remoteScan.id);
+          const isActuallyLocal = existing ? existing.isLocal : false;
+
+          await db.scans.put({
+            id: remoteScan.id,
+            eventId: remoteScan.event_id,
+            personId: remoteScan.person_id,
+            timestamp: Number(remoteScan.timestamp),
+            method: remoteScan.method,
+            uploaded: true,
+            isLocal: isActuallyLocal,
+          });
+        }
+
+        localStorage.setItem(`lastSync_${currentEventId}`, data.server_time);
+
+        setSyncMessage(
+          `Synced! Pushed ${pendingScans.length} scan${pendingScans.length !== 1 ? "s" : ""}. Received ${trulyNewScans.length} update${trulyNewScans.length !== 1 ? "s" : ""}.`,
+        );
+      }
+    } catch (err) {
+      console.error("Batch sync failed:", err);
+      setError("Sync failed. Check your connection.");
+    } finally {
       setIsSyncing(false);
       setTimeout(() => setSyncMessage(null), 3000);
-      return;
     }
-
-    let successCount = 0;
-    const BACKEND_URL = "http://localhost:5000/scans";
-
-    for (const scan of pendingScans) {
-      try {
-        const response = await fetch(BACKEND_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: scan.id,
-            event_id: scan.eventId,
-            person_id: scan.personId,
-            timestamp: scan.timestamp,
-            method: scan.method,
-          }),
-        });
-
-        if (response.ok) {
-          await db.scans.update(scan.id, { uploaded: true });
-          successCount++;
-        }
-      } catch (err) {
-        console.error("Sync failed for record:", scan.id, err);
-      }
-    }
-
-    setSyncMessage(`Successfully synced ${successCount} scans to backend.`);
-    setIsSyncing(false);
-    setTimeout(() => setSyncMessage(null), 3000);
   };
 
   const startScanner = () => {
@@ -126,14 +144,12 @@ const Scanner = ({ currentEventId }: Props) => {
             return;
           }
 
-          // 2. Existence Check: Does this person exist in our DB?
           const person = await db.people.get(personGuid);
           if (!person) {
             setError("Access Denied: Attendee not found in system.");
             return;
           }
 
-          // 3. Authorization Check: Is this person actually invited to THIS event?
           const isInvited = await db.eventAttendees
             .where({ eventId: currentEventId, personId: personGuid })
             .first();
@@ -162,6 +178,7 @@ const Scanner = ({ currentEventId }: Props) => {
               timestamp: Date.now(),
               method: "scan",
               uploaded: false,
+              isLocal: true,
             });
 
             setLastScanned(`${person.firstName} ${person.lastName}`);
@@ -200,6 +217,15 @@ const Scanner = ({ currentEventId }: Props) => {
   return (
     <div className="row">
       <div className="col-12">
+        {syncMessage && (
+          <Notification
+            severity="information"
+            title="Sync Status"
+            onDismiss={() => setSyncMessage(null)}
+          >
+            {syncMessage}
+          </Notification>
+        )}
         {lastScanned && (
           <Notification
             severity="positive"
@@ -244,10 +270,16 @@ const Scanner = ({ currentEventId }: Props) => {
               <li key={index} className="p-list__item u-flex u-space-between">
                 <span>{scan.name}</span>
                 <span className="u-text--muted">
+                  {scan.checkInTime}
+                  {new Date(scan.timestamp).toLocaleDateString([], {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric",
+                  })}{" "}
+                  at{" "}
                   {new Date(scan.timestamp).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
-                    second: "2-digit",
                   })}
                 </span>
               </li>
